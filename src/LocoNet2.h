@@ -208,6 +208,23 @@ LN_STATUS reportSwitch(LocoNetBus *ln, uint16_t Address);
 LN_STATUS reportSensor(LocoNetBus *ln, uint16_t Address, uint8_t State);
 LN_STATUS reportPower(LocoNetBus *ln, bool state);
 
+/**
+ * report Sensor in Blücher GBM mode
+*/
+LN_STATUS reportSensorB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, bool present);
+
+/**
+ * report multisense transponder in Blücher GBM16XN mode
+*/
+LN_STATUS reportMultiSenseTransponderB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, uint16_t locoAddress, bool present, bool direction);
+
+/**
+ * report multisense transponder and sensor in Blücher GBM16XN mode
+ * 
+ * equal to calling reportSensorB and reportMultiSenseTransponderB directly after each other
+*/
+void reportMultiSenseTransponderSensorB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, uint16_t locoAddress, bool present, bool direction);
+
 class LocoNetDispatcher : public LocoNetConsumer {
     public:
         LocoNetDispatcher(LocoNetBus *ln);
@@ -264,6 +281,20 @@ class LocoNetDispatcher : public LocoNetConsumer {
          *                                              address    zone    locoaddr  presense
          */
         void onMultiSenseTransponder(std::function<void(uint16_t, uint8_t, uint16_t, bool)> callback);
+
+        /**
+         * Registers a callback for when a sensor changes state
+         * Reads out 16 block format of Blücher GBM messages
+         *                                     boardaddress block state
+         */
+        void onSensorChangeB(std::function<void(uint8_t, uint8_t, bool)> callback);
+
+        /**
+         * Registers a callback for when a MultiSense Transponder event is triggered
+         * Reads out special format of Blücher GBM16XN transponder messages
+         *                                              display_address block locoaddr presence direction
+         */
+        void onMultiSenseTransponderB(std::function<void(uint8_t, uint8_t, uint16_t, bool, bool)> callback);
 
     private:
         LocoNetBus * ln;

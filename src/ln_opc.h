@@ -177,11 +177,19 @@ constexpr uint8_t OPC_MULTI_SENSE_ZONE_MASK = 0x0F;
 #define OPC_MULTI_SENSE_BOARD_ID(arg1, arg2) \
     arg2 + 1 + (arg1 & 0x01) ? 128 : 0
 #define OPC_MULTI_SENSE_BOARD_ADDRESS(zone, type) \
-    zone + (type & 0x1F << 7) + 1
+    zone + ((type & 0x1F) << 7) + 1
 #define OPC_MULTI_SENSE_LOCO_ADDRESS(adr1, adr2) \
-    adr2 + (adr1 != 0x7D ? adr1 << 7 : 0)
+    adr2 + (adr1 != 0x7D ? (adr1 & 0x1F) << 7 : 0)
 #define OPC_MULTI_SENSE_PRESENCE(type) \
     type & OPC_MULTI_SENSE_PRESENT
+#define OPC_MULTI_SENSE_B_LOCO_DIRECTION(adr1, adr2) \
+    !(adr1 & 0x20)
+#define OPC_MULTI_SENSE_B_LOCO_DIRECTION_STRING(direction) \
+    direction ? "forward" : "backward"
+#define OPC_MULTI_SENSE_B_BOARD_ADDRESS(adr1, adr2) \
+    ((((adr1 & 0x1F) << 7) + adr2) >> 4) + 1
+#define OPC_MULTI_SENSE_B_BLOCK_ADDRESS(adr1, adr2) \
+    (adr2 & 0xF) + 1
 
 /* Slot Status byte definitions and macros */
 /***********************************************************************************

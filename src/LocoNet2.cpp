@@ -262,6 +262,47 @@ LN_STATUS reportSensor(LocoNetBus *ln,  uint16_t Address, uint8_t State ) {
   return ln->broadcast( makeMsg(OPC_INPUT_REP, AddrL, AddrH) );
 }
 
+LN_STATUS reportSensorB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, bool present) {
+  return reportSensor(ln, (boardaddress - 1) * 16 + block, present);
+}
+
+LN_STATUS reportMultiSenseTransponderB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, uint16_t locoAddress, bool present, bool direction) {
+  DEBUG("reportMultiSenseTransponderB(boardaddress=%d, block=%d, locoAddress=%d, present=%d, direction=%d)\n",
+    boardaddress, block, locoAddress, present, direction);
+  
+  LnMsg SendPacket;
+
+  SendPacket.msdi.command = OPC_MULTI_SENSE;
+
+  // board address = ((((arg1 & 0x1F) << 7) + arg2) >> 4) + 1
+  // block address = (arg2 & 0xF) + 1
+  if (boardaddress == 0) boardaddress = 1;
+  boardaddress--;
+  block--;
+  boardaddress <<= 4;
+  boardaddress |= block;
+  SendPacket.msdi.arg1 = (boardaddress >> 7) & 0x1F;
+  SendPacket.msdi.arg2 = boardaddress & 0x7F;
+
+  // append presence flag
+  SendPacket.msdi.arg1 |= present ? OPC_MULTI_SENSE_PRESENT : OPC_MULTI_SENSE_ABSENT;
+
+  // loco address = arg4 + (arg3 << 7)
+  SendPacket.msdi.arg3 = (locoAddress >> 7) & 0x1F;
+  SendPacket.msdi.arg4 = locoAddress & 0x7F;
+
+  // set direction flag
+  // direction = !(arg3 & 0x20)
+  SendPacket.msdi.arg3 |= (uint8_t)direction << 5;
+  
+  writeChecksum(SendPacket);
+  return ln->broadcast(SendPacket);
+}
+
+void reportMultiSenseTransponderSensorB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, uint16_t locoAddress, bool present, bool direction) {
+    reportSensorB(ln, boardaddress, block, present);
+    reportMultiSenseTransponderB(ln, boardaddress, block, locoAddress, present, direction);
+}
 
 
 
@@ -383,6 +424,32 @@ void LocoNetDispatcher::onMultiSenseTransponder(std::function<void(uint16_t, uin
         OPC_MULTI_SENSE_ZONE_ID(packet->mstr.zone),
         OPC_MULTI_SENSE_LOCO_ADDRESS(packet->mstr.adr1, packet->mstr.adr2),
         OPC_MULTI_SENSE_PRESENCE(packet->mstr.type));
+    }
+  });
+}
+
+void LocoNetDispatcher::onSensorChangeB(std::function<void(uint8_t, uint8_t, bool)> callback) {
+  onPacket(OPC_INPUT_REP, [callback](const LnMsg *packet) {
+    uint16_t address = (packet->srq.sw1 | ((packet->srq.sw2 & 0x0F ) << 7));
+    address <<= 1;
+    address += (packet->ir.in2 & OPC_INPUT_REP_SW) ? 2 : 1;
+    uint8_t boardaddress = address / 16 + 1;
+    uint8_t block = address % 16 + 1;
+    DEBUG("SensorB addr:%d block:%d, state:%d", boardaddress, block, packet->ir.in2 & OPC_INPUT_REP_HI);
+    callback(boardaddress, block, packet->ir.in2 & OPC_INPUT_REP_HI);
+  });
+}
+
+void LocoNetDispatcher::onMultiSenseTransponderB(std::function<void(uint8_t, uint8_t, uint16_t, bool, bool)> callback) {
+  onPacket(OPC_MULTI_SENSE, [callback](const LnMsg *packet) {
+    if((packet->data[1] & OPC_MULTI_SENSE_MSG) == OPC_MULTI_SENSE_ABSENT ||
+       (packet->data[1] & OPC_MULTI_SENSE_MSG) == OPC_MULTI_SENSE_PRESENT) {
+      callback(OPC_MULTI_SENSE_B_BOARD_ADDRESS(packet->msdi.arg1, packet->msdi.arg2),
+        OPC_MULTI_SENSE_B_BLOCK_ADDRESS(packet->msdi.arg1, packet->msdi.arg2),
+        OPC_MULTI_SENSE_LOCO_ADDRESS(packet->msdi.arg3, packet->msdi.arg4),
+        OPC_MULTI_SENSE_PRESENCE(packet->msdi.arg1),
+        OPC_MULTI_SENSE_B_LOCO_DIRECTION(packet->msdi.arg3, packet->msdi.arg4)
+        );
     }
   });
 }
