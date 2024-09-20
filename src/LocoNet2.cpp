@@ -243,6 +243,20 @@ LN_STATUS requestSwitch(LocoNetBus *ln, uint16_t address, uint8_t output, uint8_
   return ln->broadcast( makeSwRec(address, output==1, direction==0) );
 }
 
+void sendStationaryInterrogateCommand(LocoNetBus *ln, uint16_t baseAddress) {
+  requestSwitch(ln, baseAddress, 0, true);
+  requestSwitch(ln, baseAddress + 1, 0, true);
+  requestSwitch(ln, baseAddress + 2, 0, true);
+  requestSwitch(ln, baseAddress + 3, 0, true);
+  requestSwitch(ln, baseAddress, 0, false);
+  requestSwitch(ln, baseAddress + 1, 0, false);
+  requestSwitch(ln, baseAddress + 2, 0, false);
+  requestSwitch(ln, baseAddress + 3, 0, false);
+}
+void sendStationaryInterrogateCommand(LocoNetBus *ln) {
+  return sendStationaryInterrogateCommand(ln, 1017);
+}
+
 LN_STATUS reportSwitch(LocoNetBus *ln, uint16_t Address) {
   Address -= 1;
   return ln->broadcast( makeMsg(OPC_SW_STATE, (Address & 0x7F), ((Address >> 7) & 0x0F) ) );

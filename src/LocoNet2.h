@@ -205,6 +205,8 @@ size_t formatMsg(const LnMsg &, char* dst, size_t len);
 
 LN_STATUS requestSwitch(LocoNetBus *ln, uint16_t Address, uint8_t Output, uint8_t Direction);
 LN_STATUS reportSwitch(LocoNetBus *ln, uint16_t Address);
+void sendStationaryInterrogateCommand(LocoNetBus *ln, uint16_t baseAddress);
+void sendStationaryInterrogateCommand(LocoNetBus *ln);
 LN_STATUS reportSensor(LocoNetBus *ln, uint16_t Address, uint8_t State);
 LN_STATUS reportPower(LocoNetBus *ln, bool state);
 
