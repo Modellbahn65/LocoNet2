@@ -226,15 +226,31 @@ LN_STATUS reportSensorB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, bo
 
 /**
  * report multisense transponder in Blücher GBM16XN mode
+ * without direction feedback
+*/
+LN_STATUS reportMultiSenseTransponderB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, uint16_t locoAddress, bool present);
+
+/**
+ * report multisense transponder in Blücher GBM16XN mode
+ * with direction feedback, direction true = forwards
 */
 LN_STATUS reportMultiSenseTransponderB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, uint16_t locoAddress, bool present, bool direction);
 
 /**
- * report multisense transponder and sensor in Blücher GBM16XN mode
+ * report sensor and multisense transponder in Blücher GBM16XN mode
+ * without direction feedback
  * 
  * equal to calling reportSensorB and reportMultiSenseTransponderB directly after each other
 */
-void reportMultiSenseTransponderSensorB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, uint16_t locoAddress, bool present, bool direction);
+LN_STATUS reportMultiSenseTransponderSensorB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, uint16_t locoAddress, bool present);
+
+/**
+ * report sensor and multisense transponder in Blücher GBM16XN mode
+ * with direction feedback, direction true = forwards
+ * 
+ * equal to calling reportSensorB and reportMultiSenseTransponderB directly after each other
+*/
+LN_STATUS reportMultiSenseTransponderSensorB(LocoNetBus *ln, uint16_t boardaddress, uint8_t block, uint16_t locoAddress, bool present, bool direction);
 
 class LocoNetDispatcher : public LocoNetConsumer
 {
@@ -304,9 +320,21 @@ public:
     /**
      * Registers a callback for when a MultiSense Transponder event is triggered
      * Reads out special format of Blücher GBM16XN transponder messages
+     * This variant parses the loco direction encoded as the 13th bit in the loco address,
+     * which is to be used when GBM16XN modules have direction feedback enabled.
+     * direction true = forwards
      *                                              display_address block locoaddr presence direction
      */
     void onMultiSenseTransponderB(std::function<void(uint8_t, uint8_t, uint16_t, bool, bool)> callback);
+    
+    /**
+     * Registers a callback for when a MultiSense Transponder event is triggered
+     * Reads out special format of Blücher GBM16XN transponder messages
+     * This variant does not parse directions and leaves the loco address unchanged,
+     * which is to be used when GBM16XN has the direction feedback disabled.
+     *                                              display_address block locoaddr presence
+     */
+    void onMultiSenseTransponderB(std::function<void(uint8_t, uint8_t, uint16_t, bool)> callback);
 
     /**
      * Registers a callback for when a MultiSense Transponder event is triggered
