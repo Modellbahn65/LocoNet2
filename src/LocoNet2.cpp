@@ -413,9 +413,9 @@ LN_STATUS reportMultiSenseTransponderB(LocoNetBus *ln, uint16_t boardaddress, ui
     LnMsg SendPacket = createMultiSenseTransponderBPacket(boardaddress, block, locoAddress, present);
 
     // set direction flag
-    // direction = !(arg3 & 0x20)
-    SendPacket.msdi.arg3 &= ~0x20;
-    SendPacket.msdi.arg3 |= (uint8_t)(!direction) << 5;
+    SendPacket.msdi.arg3 &= ~OPC_MULTI_SENSE_DIRECTION;
+    if (direction)
+        SendPacket.msdi.arg3 |= OPC_MULTI_SENSE_DIRECTION;
     
     writeChecksum(SendPacket);
     return ln->broadcast(SendPacket);

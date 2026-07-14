@@ -163,6 +163,7 @@
 #define OPC_MULTI_SENSE_ABSENT        0x00 /* MSG field: transponder lost     */
 #define OPC_MULTI_SENSE_PRESENT       0x20 /* MSG field: transponder seen     */
 #define OPC_MULTI_SENSE_DEVICE_INFO   0x60 /* MSG field: Device Info Message  */
+#define OPC_MULTI_SENSE_DIRECTION     0x20 /* ADR field: loco direction       */
 constexpr uint8_t OPC_MULTI_SENSE_ZONE_MASK = 0x0F;
 #define OPC_MULTI_SENSE_ZONE_ID(zone) \
     (zone & OPC_MULTI_SENSE_ZONE_MASK) == 0x00 ? 'A' : \
@@ -181,11 +182,11 @@ constexpr uint8_t OPC_MULTI_SENSE_ZONE_MASK = 0x0F;
 #define OPC_MULTI_SENSE_LOCO_ADDRESS(adr1, adr2) \
     (adr2 + (uint16_t(adr1 & 0x7F) << 7))
 #define OPC_MULTI_SENSE_LOCO_ADDRESS_WITH_DIRECTION(adr1, adr2) \
-    OPC_MULTI_SENSE_LOCO_ADDRESS((adr1 & ~0x20), adr2)
+    OPC_MULTI_SENSE_LOCO_ADDRESS((adr1 & ~OPC_MULTI_SENSE_DIRECTION), adr2)
 #define OPC_MULTI_SENSE_PRESENCE(type) \
     ((type & OPC_MULTI_SENSE_PRESENT) > 0)
 #define OPC_MULTI_SENSE_B_LOCO_DIRECTION(adr1, adr2) \
-    !(adr1 & 0x20)
+    ((adr1 & OPC_MULTI_SENSE_DIRECTION) > 0)
 #define OPC_MULTI_SENSE_B_LOCO_DIRECTION_STRING(direction) \
     (direction ? "forward" : "backward")
 #define OPC_MULTI_SENSE_B_BOARD_ADDRESS(adr1, adr2) \
